@@ -1,0 +1,74 @@
+
+in book: bug bounty real world
+The OAuth Workflow
+The OAuth process is complex, so let’s begin with basic terms. Three
+actors are involved in the most basic OAuth flow:
+The resource owner is the user attempting to log in via OAuth.
+The resource server is a third-party API that authenticates the
+resource owner. Any site can be a resource server, but the most
+popular ones include Facebook, Google, LinkedIn, and so on.
+The client is the third-party application that the resource owner
+visits. The client is allowed to access data on the resource server
+When you attempt to log in using OAuth, the client requests access
+to your information from the resource server and asks the resource
+owner (in this case, you) for approval to access the data. The client
+might ask for access to all your information or only specific pieces. The
+information that a client requests is defined by scopes. Scopes are
+similar to permissions in that they restrict what information an
+application can access from the resource server. For example, Facebook
+scopes include the user’s 
+email
+, 
+public_profile
+, 
+user_friends
+, and so on. If
+you grant a client access to only the 
+email
+ scope, the client can’t access
+your profile information, friends list, and other information.
+Now that you understand the actors involved, let’s examine the
+OAuth process when logging into a client for the first time using
+Facebook as the example resource server. The OAuth process begins
+when you visit a client and click the Login with Facebook button. This
+results in a 
+GET
+ request to an authentication endpoint on the client.
+Often, 
+the 
+path 
+looks 
+like 
+this: 
+https://www.
+<example>.com/oauth/facebook/. Shopify, for example, uses Google for
+OAuth with the URL https://<STORE>.myshopify.com/admin/auth/login?
+google_apps=1/.
+The client responds to this HTTP request with a 302 redirect to the
+resource server. The redirect URL will include parameters to facilitate
+the OAuth process, which are defined as follows:
+The client_id identifies the client to the resource server. Each client
+will have its own client_id so the resource server can identify the
+application initiating the request to access the resource owner’s
+information.
+The redirect_uri identifies where the resource server should redirect
+the resource owner’s browser after the resource server has
+authenticated the resource owner.
+The response_type identifies what type of response to provide. This
+is usually a token or code, although a resource server can define
+other accepted values. A token response type provides an access
+token that immediately allows access to information from the
+resource server. A code response type provides an access code that
+must be exchanged for an access token via an extra step in the
+OAuth process.
+The scope, mentioned earlier, identifies the permissions a client is
+requesting to access from the resource server. During the first
+authorization request, the resource owner should be presented
+with a dialog to review and approve the requested scopes.
+The state is an unguessable value that prevents cross-site request
+forgeries. This value is optional but should be implemented on all
+OAuth applications. It should be included in the HTTP request to
+the resource server. Then it should be returned and validated by
+the client to ensure an attacker can’t maliciously invoke the OAuth
+process on another user’s behalf
+
