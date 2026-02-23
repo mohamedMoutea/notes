@@ -1,0 +1,39 @@
+Stealing Slack OAuth Tokens
+A common OAuth vulnerability occurs when a developer improperly
+configures or compares permitted redirect_uri parameters, allowing
+attackers to steal OAuth tokens. In March 2013, Prakhar Prasad found
+just that on Slack’s OAuth implementation. Prasad informed Slack that
+he could bypass their redirect_uri restrictions by appending anything to
+a whitelisted redirect_uri. In other words, Slack was only validating the
+beginning of the redirect_uri parameter. If a developer registered a new
+application with Slack and whitelisted https://www.<example>.com, an
+attacker could append a value to the URL and cause the redirect to go
+somewhere unintended. For example, modifying the URL to pass
+redirect_uri=https://<attacker>.com would be rejected, but passing
+redirect_uri=https://www.<example>.com.mx would be accepted.
+To exploit this behavior, an attacker only has to create a matching
+subdomain on their malicious site. If a targeted user visits the
+maliciously modified URL, Slack sends the OAuth token to the
+attacker’s site. An attacker could invoke the request on behalf of the
+targeted user by embedding an 
+<img>
+ tag on a malicious web page, such
+as 
+<img 
+src=https://slack.com/oauth/authorize?
+response_type=token&client_id=APP_ID&redirect_uri=https://www.example.com.at
+tacker.com>
+. Using an 
+<img>
+ tag automatically invokes an HTTP 
+GET
+request when rendered.
+Takeaways
+Vulnerabilities in which the redirect_uri haven’t been strictly checked
+are a common OAuth misconfiguration. Sometimes, the vulnerability is
+the result of an application registering a domain, such as *.
+<example>.com, as an acceptable redirect_uri. Other times, it’s the result
+of a resource server not performing a strict check on the beginning and
+end of the redirect_uri parameter. In this example, it was the latter.
+When you’re looking for OAuth vulnerabilities, always be sure to test
+any parameter that indicates a redirection is being used.
