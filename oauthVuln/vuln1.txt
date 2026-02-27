@@ -1,39 +1,84 @@
-Stealing Slack OAuth Tokens
-A common OAuth vulnerability occurs when a developer improperly
-configures or compares permitted redirect_uri parameters, allowing
-attackers to steal OAuth tokens. In March 2013, Prakhar Prasad found
-just that on Slack’s OAuth implementation. Prasad informed Slack that
-he could bypass their redirect_uri restrictions by appending anything to
-a whitelisted redirect_uri. In other words, Slack was only validating the
-beginning of the redirect_uri parameter. If a developer registered a new
-application with Slack and whitelisted https://www.<example>.com, an
-attacker could append a value to the URL and cause the redirect to go
-somewhere unintended. For example, modifying the URL to pass
-redirect_uri=https://<attacker>.com would be rejected, but passing
-redirect_uri=https://www.<example>.com.mx would be accepted.
-To exploit this behavior, an attacker only has to create a matching
-subdomain on their malicious site. If a targeted user visits the
-maliciously modified URL, Slack sends the OAuth token to the
-attacker’s site. An attacker could invoke the request on behalf of the
-targeted user by embedding an 
-<img>
- tag on a malicious web page, such
-as 
-<img 
-src=https://slack.com/oauth/authorize?
-response_type=token&client_id=APP_ID&redirect_uri=https://www.example.com.at
-tacker.com>
-. Using an 
-<img>
- tag automatically invokes an HTTP 
-GET
-request when rendered.
-Takeaways
-Vulnerabilities in which the redirect_uri haven’t been strictly checked
-are a common OAuth misconfiguration. Sometimes, the vulnerability is
-the result of an application registering a domain, such as *.
-<example>.com, as an acceptable redirect_uri. Other times, it’s the result
-of a resource server not performing a strict check on the beginning and
-end of the redirect_uri parameter. In this example, it was the latter.
-When you’re looking for OAuth vulnerabilities, always be sure to test
-any parameter that indicates a redirection is being used.
+The Logic Gap
+The application used Prefix Matching instead of Exact Matching.
+
+Whitelisted: https://www.example.com
+
+Attackers Goal: Redirect the OAuth access_token to their own server.
+
+The Bypass: https://www.example.com.attacker.com
+
+
+Testing Checklist (Takeaways)
+When hunting for OAuth bugs, test the redirect_uri parameter for these common misconfigurations:
+
+[ ] Suffix Manipulation: Can you append a new TLD? (example.com.evil.com)
+
+[ ] Subdomain Injection: If *.example.com is allowed, can you use attacker.example.com?
+
+[ ] Path Traversal: Does example.com/callback/../logout work?
+
+[ ] Weak Regex: Does it allow any string that simply contains the brand name?
+
+[ ] Protocol Switching: Can you switch https to http or javascript:?
+
+
+When a user signed up via Yahoo OAuth, Flurry needed to create a corresponding account in their own database. Instead of creating a "password-less" account, they reused their existing registration API which required a password field.
+
+To bypass this requirement, the developers hardcoded a placeholder:
+
+The Request: POST /auth/v1/account
+
+The Payload: {"attributes": {"email": "user@yahoo.com", "password": "not-provided"}}
+
+Testing Checklist (Takeaways)
+When testing OAuth or Third-Party integrations, look for these "custom" bridges:
+
+[ ] Observe the "Link" Request: Look for the HTTP request that happens after the OAuth provider redirects back but before you are logged in. This is often a POST to a /register or /sync endpoint.
+
+[ ] Inspect Hidden Defaults: Check if parameters like password, secret, or otp are being passed with values like null, none, default, or not-provided.
+
+[ ] Test the "Traditional" Login: If you sign up with OAuth, always go back to the standard login form and try to log in with your email and the "placeholder" values found in step 1.
+
+[ ] Analyze Custom Fields: Developers often add custom logic to standard OAuth flows to make them fit their legacy database. These "hand-off" points are the most likely place for bugs.
+
+
+
+
+
+When the /v3/login endpoint receives your u parameter, the backend code (likely PHP or Go) checks it against a Whitelist.
+
+If it's on the whitelist: (e.g., manager.infomaniak.com), it proceeds.
+
+If it's NOT on the whitelist: (e.g., evil-attacker.com), the server will usually do one of two things:
+
+Drop it: It ignores your input and resets u to the default dashboard.
+
+Error: It stops the request entirely.
+
+how to bypass it 
+A. Parameter Pollution
+Try sending the parameter twice. Sometimes the server validates the first one but the JWT-builder uses the second one.
+
+GET /v3/login?u=https://manager.infomaniak.com&u=https://evil.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
