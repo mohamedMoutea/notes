@@ -62,9 +62,25 @@ Try sending the parameter twice. Sometimes the server validates the first one bu
 GET /v3/login?u=https://manager.infomaniak.com&u=https://evil.com
 
 
+Testing Checklist (Takeaways)
+This is "Difficulty: High" because it requires finding abandoned assets. When hunting:
+
+[ ] Audit Pre-Authorized Apps: Look for apps that don't ask for permission. Check their developer settings or associated domains.
+
+[ ] Domain/Subdomain Takeover: If you see a redirect_uri pointing to a subdomain (e.g., dev-callback.example.com), check if that subdomain is pointing to a "404" on a service like AWS, GitHub Pages, or Heroku. If you can claim it, you can steal the tokens.
+
+[ ] Check Legacy/Marketing Sites: Big companies often create small "campaign" sites for a product launch (e.g., win-a-car-contest.com). Once the contest ends, they forget to remove it from their OAuth whitelist.
 
 
+When testing OAuth or Third-Party integrations, look for these "custom" bridges:
 
+[ ] Observe the "Link" Request: Look for the HTTP request that happens after the OAuth provider redirects back but before you are logged in. This is often a POST to a /register or /sync endpoint.
+
+[ ] Inspect Hidden Defaults: Check if parameters like password, secret, or otp are being passed with values like null, none, default, or not-provided.
+
+[ ] Test the "Traditional" Login: If you sign up with OAuth, always go back to the standard login form and try to log in with your email and the "placeholder" values found in step 1.
+
+[ ] Analyze Custom Fields: Developers often add custom logic to standard OAuth flows to make them fit their legacy database. These "hand-off" points are the most likely place for bugs.
 
 
 
